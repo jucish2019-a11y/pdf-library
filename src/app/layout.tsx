@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Lora } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from 'next-themes';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Toaster } from 'sonner';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
+const lora = Lora({ subsets: ['latin'], variable: '--font-serif', display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'PDF Library',
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.variable} ${lora.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <div className="flex min-h-screen">
             <Sidebar />

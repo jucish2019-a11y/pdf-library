@@ -1,12 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { pdfjs } from 'react-pdf';
-
-// Set the worker source
-if (typeof window !== 'undefined') {
-  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-}
 
 interface CoverExtractorProps {
   bookId: string;
@@ -15,7 +9,6 @@ interface CoverExtractorProps {
 }
 
 export function CoverExtractor({ bookId, fileUrl, onDone }: CoverExtractorProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const done = useRef(false);
 
   useEffect(() => {
@@ -24,27 +17,25 @@ export function CoverExtractor({ bookId, fileUrl, onDone }: CoverExtractorProps)
 
     (async () => {
       try {
-        const loadingTask = pdfjs.getDocument(fileUrl);
-        const pdf = await loadingTask.promise;
+        // Fully dynamic import — only runs in the browser, never during SSR
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+
+        const pdf = await pdfjsLib.getDocument(fileUrl).promise;
         const page = await pdf.getPage(1);
         const viewport = page.getViewport({ scale: 1 });
-
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        // Render at 2x scale for higher-res cover
         const scale = Math.min(400 / viewport.width, 600 / viewport.height, 2);
         const scaled = page.getViewport({ scale });
+
+        const canvas = document.createElement('canvas');
         canvas.width = scaled.width;
         canvas.height = scaled.height;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        const ctx = canvas.getContext('2d')!;
 
         await page.render({ canvasContext: ctx, viewport: scaled, canvas }).promise;
 
         canvas.toBlob(async blob => {
-          if (!blob) return;
+          if (!blob) { onDone?.(); return; }
           const form = new FormData();
           form.append('bookId', bookId);
           form.append('image', blob, `${bookId}.png`);
@@ -58,10 +49,5 @@ export function CoverExtractor({ bookId, fileUrl, onDone }: CoverExtractorProps)
     })();
   }, [bookId, fileUrl, onDone]);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{ position: 'absolute', left: -9999, top: -9999, visibility: 'hidden' }}
-    />
-  );
+  return null;
 }

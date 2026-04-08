@@ -2,8 +2,13 @@
 
 import { useState, type ReactNode } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import dynamic from 'next/dynamic';
 import { DropZone } from './DropZone';
-import { CoverExtractor } from './CoverExtractor';
+
+const CoverExtractor = dynamic(
+  () => import('./CoverExtractor').then(m => ({ default: m.CoverExtractor })),
+  { ssr: false }
+);
 import { toast } from 'sonner';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 
