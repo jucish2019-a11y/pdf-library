@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import db from '@/db';
-import { getPdfFullPath } from '@/lib/file-store';
+import { getBookFileFullPath } from '@/lib/file-store';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const book = db.prepare('SELECT file_path FROM books WHERE id = ?').get(params.id) as
-    | { file_path: string }
+  const book = db.prepare('SELECT file_path, file_type FROM books WHERE id = ?').get(params.id) as
+    | { file_path: string; file_type: string }
     | undefined;
 
   if (!book) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const fullPath = getPdfFullPath(book.file_path);
+  const fullPath = getBookFileFullPath(book.file_path);
   if (!fs.existsSync(fullPath)) {
     return NextResponse.json({ error: 'File missing' }, { status: 404 });
   }
+
+  const contentType = book.file_type === 'epub' ? 'application/epub+zip' : 'application/pdf';
 
   const stat = fs.statSync(fullPath);
   const fileSize = stat.size;
@@ -33,7 +35,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return new NextResponse(new Uint8Array(buffer), {
         status: 206,
         headers: {
-          'Content-Type': 'application/pdf',
+          'Content-Type': contentType,
           'Content-Range': `bytes ${start}-${end}/${fileSize}`,
           'Accept-Ranges': 'bytes',
           'Content-Length': String(chunkSize),
@@ -46,7 +48,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const buffer = fs.readFileSync(fullPath);
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
-      'Content-Type': 'application/pdf',
+      'Content-Type': contentType,
       'Content-Disposition': 'inline',
       'Accept-Ranges': 'bytes',
       'Content-Length': String(fileSize),

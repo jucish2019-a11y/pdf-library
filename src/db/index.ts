@@ -19,6 +19,12 @@ db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
 // Initialize schema
+// Migrate legacy schemas that predate file_type column
+const bookCols = db.prepare(`PRAGMA table_info(books)`).all() as { name: string }[];
+if (bookCols.length > 0 && !bookCols.some(c => c.name === 'file_type')) {
+  db.exec(`ALTER TABLE books ADD COLUMN file_type TEXT NOT NULL DEFAULT 'pdf'`);
+}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS books (
     id TEXT PRIMARY KEY,
@@ -29,6 +35,8 @@ db.exec(`
     cover_path TEXT,
     status TEXT NOT NULL DEFAULT 'to-read'
       CHECK(status IN ('to-read', 'reading', 'read')),
+    file_type TEXT NOT NULL DEFAULT 'pdf'
+      CHECK(file_type IN ('pdf', 'epub')),
     page_count INTEGER NOT NULL DEFAULT 0,
     current_page INTEGER NOT NULL DEFAULT 0,
     rating INTEGER CHECK(rating BETWEEN 1 AND 5),

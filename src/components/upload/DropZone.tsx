@@ -14,8 +14,16 @@ export function DropZone({ onFiles }: DropZoneProps) {
 
   const handle = (files: FileList | null) => {
     if (!files) return;
-    const pdfs = Array.from(files).filter(f => f.type === 'application/pdf');
-    if (pdfs.length) onFiles(pdfs);
+    const accepted = Array.from(files).filter(f => {
+      const name = f.name.toLowerCase();
+      return (
+        f.type === 'application/pdf' ||
+        f.type === 'application/epub+zip' ||
+        name.endsWith('.pdf') ||
+        name.endsWith('.epub')
+      );
+    });
+    if (accepted.length) onFiles(accepted);
   };
 
   return (
@@ -32,13 +40,13 @@ export function DropZone({ onFiles }: DropZoneProps) {
       <input
         ref={inputRef}
         type="file"
-        accept="application/pdf"
+        accept="application/pdf,application/epub+zip,.pdf,.epub"
         multiple
         className="hidden"
         onChange={e => handle(e.target.files)}
       />
       <CloudUpload className={cn('h-10 w-10 mx-auto mb-3', dragging ? 'text-primary' : 'text-muted-foreground')} />
-      <p className="text-sm font-medium">Drop PDF files here or click to browse</p>
+      <p className="text-sm font-medium">Drop PDF or EPUB files here or click to browse</p>
       <p className="text-xs text-muted-foreground mt-1">Supports multiple files</p>
     </div>
   );

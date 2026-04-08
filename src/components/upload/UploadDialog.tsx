@@ -16,6 +16,7 @@ interface UploadItem {
   file: File;
   status: 'pending' | 'uploading' | 'extracting' | 'done' | 'error';
   bookId?: string;
+  fileType?: 'pdf' | 'epub';
 }
 
 interface UploadDialogProps {
@@ -38,7 +39,14 @@ export function UploadDialog({ children, onUploaded }: UploadDialogProps) {
       const res = await fetch('/api/books', { method: 'POST', body: form });
       if (!res.ok) throw new Error('Upload failed');
       const book = await res.json();
-      updateItem(file, { status: 'extracting', bookId: book.id });
+      // EPUBs already have cover + metadata extracted server-side — mark done
+      if (book.file_type === 'epub') {
+        updateItem(file, { status: 'done', bookId: book.id, fileType: 'epub' });
+        toast.success(`"${file.name}" added to library`);
+        onUploaded?.();
+      } else {
+        updateItem(file, { status: 'extracting', bookId: book.id, fileType: 'pdf' });
+      }
     } catch {
       updateItem(file, { status: 'error' });
       toast.error(`Failed to upload "${file.name}"`);
@@ -82,8 +90,8 @@ export function UploadDialog({ children, onUploaded }: UploadDialogProps) {
                     {item.status === 'extracting' ? 'Generating cover...' : item.status}
                   </p>
                 </div>
-                {/* Hidden cover extractor */}
-                {item.status === 'extracting' && item.bookId && (
+                {/* Hidden cover extractor — PDFs only; EPUBs get cover server-side */}
+                {item.status === 'extracting' && item.bookId && item.fileType === 'pdf' && (
                   <CoverExtractor
                     key={item.bookId}
                     bookId={item.bookId}

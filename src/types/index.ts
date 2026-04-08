@@ -6,6 +6,7 @@ export interface Book {
   author: string;
   filename: string;
   file_path: string;
+  file_type: 'pdf' | 'epub';
   cover_path: string | null;
   status: ReadStatus;
   page_count: number;

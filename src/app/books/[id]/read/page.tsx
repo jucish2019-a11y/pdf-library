@@ -2,8 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { PdfReader } from '@/components/reader/PdfReader';
 import type { Book } from '@/types';
+
+const EpubReader = dynamic(
+  () => import('@/components/reader/EpubReader').then(m => ({ default: m.EpubReader })),
+  { ssr: false }
+);
 
 export default function ReadPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -21,11 +27,11 @@ export default function ReadPage({ params }: { params: { id: string } }) {
     );
   }
 
-  return (
-    <PdfReader
-      bookId={params.id}
-      title={book.title}
-      onClose={() => router.back()}
-    />
-  );
+  const onClose = () => router.back();
+
+  if (book.file_type === 'epub') {
+    return <EpubReader bookId={params.id} title={book.title} onClose={onClose} />;
+  }
+
+  return <PdfReader bookId={params.id} title={book.title} onClose={onClose} />;
 }

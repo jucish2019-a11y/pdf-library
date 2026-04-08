@@ -14,9 +14,16 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   if (!fs.existsSync(fullPath)) return NextResponse.json({ error: 'File missing' }, { status: 404 });
 
   const buffer = fs.readFileSync(fullPath);
-  return new NextResponse(buffer, {
+  const ext = path.extname(fullPath).slice(1).toLowerCase();
+  const mime =
+    ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' :
+    ext === 'gif' ? 'image/gif' :
+    ext === 'webp' ? 'image/webp' :
+    ext === 'svg' ? 'image/svg+xml' :
+    'image/png';
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
-      'Content-Type': 'image/png',
+      'Content-Type': mime,
       'Cache-Control': 'public, max-age=86400',
     },
   });

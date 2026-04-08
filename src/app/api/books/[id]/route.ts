@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getBook, updateBook, deleteBook } from '@/lib/books';
-import { deletePdf, deleteCover } from '@/lib/file-store';
+import { deleteBookFile, deleteCover } from '@/lib/file-store';
 import db from '@/db';
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -29,7 +29,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
 
   const deleted = deleteBook(params.id);
   if (deleted) {
-    deletePdf(book.file_path);
+    deleteBookFile(book.file_path);
     deleteCover(book.cover_path);
   }
   return NextResponse.json({ ok: true });

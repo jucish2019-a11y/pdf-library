@@ -1,14 +1,14 @@
 # PDF Library
 
-A sleek, local-first web app for managing your personal PDF book collection. Upload PDFs, organize them with tags and collections, track reading status, and read them in-browser with rotation and fullscreen support.
+A sleek, local-first web app for managing your personal ebook collection. Upload **PDF** and **EPUB** files, organize them with tags and collections, track reading status, and read them in-browser with rotation, themes, and fullscreen support.
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![SQLite](https://img.shields.io/badge/SQLite-better--sqlite3-lightgrey)
 
 ## Features
 
-- **Upload PDFs** via drag-and-drop, with automatic title, page count, and cover extraction
+- **Upload PDF & EPUB** files via drag-and-drop, with automatic title, author, and cover extraction
 - **Organize** books with tags, collections, read status (to-read / reading / read), ratings, and notes
-- **In-browser reader** with page rotation, fullscreen, and light/dark mode
+- **In-browser reader** — PDF viewer with rotation; EPUB reader with reflowable pages, themes (dark/light/sepia), TOC, and persistent reading position
 - **Full-text search** across titles, authors, and notes (SQLite FTS5)
 - **Dark mode** and a polished UI built with Tailwind CSS and shadcn/ui
 - **Fully local** — all data lives in a single `data/` directory on your machine
@@ -19,6 +19,7 @@ A sleek, local-first web app for managing your personal PDF book collection. Upl
 - **Styling:** Tailwind CSS + shadcn/ui + Framer Motion
 - **Database:** SQLite via `better-sqlite3` with FTS5 full-text search
 - **PDF:** `pdf-parse` for metadata, `pdfjs-dist` for cover extraction, native browser viewer for reading
+- **EPUB:** `jszip` for server-side metadata + cover extraction, `epubjs` / `react-reader` for in-browser reading
 - **Other:** `next-themes`, `sonner`, `lucide-react`
 
 ## Prerequisites

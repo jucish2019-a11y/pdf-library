@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/db';
 import { getBooks } from '@/lib/books';
-import { savePdf } from '@/lib/file-store';
+import { saveBookFile, saveCover, type FileType } from '@/lib/file-store';
 import { extractMeta } from '@/lib/pdf-meta';
+import { extractEpubMeta } from '@/lib/epub-meta';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -16,27 +17,58 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(books);
 }
 
+function detectType(file: File): FileType | null {
+  const name = file.name.toLowerCase();
+  if (file.type === 'application/pdf' || name.endsWith('.pdf')) return 'pdf';
+  if (
+    file.type === 'application/epub+zip' ||
+    file.type === 'application/epub' ||
+    name.endsWith('.epub')
+  ) return 'epub';
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const form = await req.formData();
     const file = form.get('file') as File | null;
-    if (!file || file.type !== 'application/pdf') {
-      return NextResponse.json({ error: 'Invalid file' }, { status: 400 });
+    if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 });
+
+    const fileType = detectType(file);
+    if (!fileType) {
+      return NextResponse.json({ error: 'Only PDF and EPUB files are supported' }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const id = crypto.randomUUID();
-    const filePath = savePdf(buffer, id);
-    const { pageCount, title } = await extractMeta(buffer);
+    const filePath = saveBookFile(buffer, id, fileType);
 
-    const originalName = file.name.replace(/\.pdf$/i, '');
+    let title = '';
+    let author = '';
+    let pageCount = 0;
+    let coverPath: string | null = null;
+
+    if (fileType === 'pdf') {
+      const meta = await extractMeta(buffer);
+      title = meta.title;
+      pageCount = meta.pageCount;
+    } else {
+      const meta = await extractEpubMeta(buffer);
+      title = meta.title;
+      author = meta.author;
+      if (meta.coverBuffer && meta.coverExt) {
+        coverPath = saveCover(meta.coverBuffer, id, meta.coverExt);
+      }
+    }
+
+    const originalName = file.name.replace(/\.(pdf|epub)$/i, '');
     const bookTitle = title || originalName;
 
     const now = Date.now();
     db.prepare(`
-      INSERT INTO books (id, title, author, filename, file_path, page_count, date_added, date_updated)
-      VALUES (?, ?, '', ?, ?, ?, ?, ?)
-    `).run(id, bookTitle, file.name, filePath, pageCount, now, now);
+      INSERT INTO books (id, title, author, filename, file_path, cover_path, file_type, page_count, date_added, date_updated)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, bookTitle, author, file.name, filePath, coverPath, fileType, pageCount, now, now);
 
     const book = db.prepare('SELECT * FROM books WHERE id = ?').get(id);
     return NextResponse.json(book, { status: 201 });
